@@ -1,0 +1,38 @@
+import maya.cmds as cmds
+
+# Default cameras(4 cams)
+default_cameras = ['persp', 'top', 'front', 'side']
+# Add camera name to protect them from deleting
+
+# PopUp
+def show_popup(camera_name):
+    result = cmds.confirmDialog(
+        title= 'Delete Camera?',
+        message=f"Are you sure you want to delete '{camera_name}'?",
+        button=['Yes', 'No'],
+        defaultButton= 'No',
+        cancelButton= 'No',
+        dismissString= 'No'
+    )
+    return result == 'Yes'
+
+
+# Get all cams
+all_cameras = cmds.ls(type= 'camera')
+
+#deleteting extra cams
+for cam_shape in all_cameras:
+    cam_transform = cmds.listRelatives(cam_shape, parent=True, fullPath=False)[0]
+    if cam_transform not in default_cameras:
+
+        if cam_transform.startswith(('persp', 'top', 'front', 'side')) and cam_transform[5:].isdigit():
+            #camera that named like persp1, top2, etc...
+            continue
+        else:
+            #confirm deleting
+            if show_popup(cam_transform):
+                try:
+                    cmds.delete(cam_transform)
+                    print(f"Deleted camera: {cam_transform}")
+                except Exception as e:
+                    print(f"Could not delete {cam_transform}: {e}")
