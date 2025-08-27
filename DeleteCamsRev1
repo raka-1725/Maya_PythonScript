@@ -23,16 +23,26 @@ all_cameras = cmds.ls(type= 'camera')
 #deleteting extra cams
 for cam_shape in all_cameras:
     cam_transform = cmds.listRelatives(cam_shape, parent=True, fullPath=False)[0]
-    if cam_transform not in default_cameras:
 
-        if cam_transform.startswith(('persp', 'top', 'front', 'side')) and cam_transform[5:].isdigit():
-            #camera that named like persp1, top2, etc...
+    if cam_transform in default_cameras:
+        continue
+
+    has_number = any(char.isdigit() for char in cam_transform)
+
+    if not has_number and not any(cam_transform.startswith(name) for name in default_cameras):
+        if not show_popup(cam_transform):
             continue
-        else:
-            #confirm deleting
-            if show_popup(cam_transform):
-                try:
-                    cmds.delete(cam_transform)
-                    print(f"Deleted camera: {cam_transform}")
-                except Exception as e:
-                    print(f"Could not delete {cam_transform}: {e}")
+    try:
+        if cmds.lockNode(cam_transform, query=True, lock=True)[0]:
+            cmds.lockNode(cam_transform, lock=False)
+        
+        if cmds.lockNode(cam_shape, query=True, lock=True)[0]:
+            cmds.lockNode(cam_shape, lock=False)
+
+        #Executing Delete
+        cmds.delete(cam_transform)
+        print(f"Deleted camera: {cam_transform}")
+
+    except Exception as e:
+        print(f"Could not delete {cam_transform}: {e}")
+
