@@ -1,7 +1,7 @@
 import maya.cmds as cmds
 
 # Default cameras(4 cams)
-default_cameras = ['persp', 'top', 'front', 'side','back','bottom', 'left','right']
+default_cameras = ['persp', 'top', 'front', 'side' , 'back' , 'bottom' , 'left' , 'right' ]
 # Add camera name to protect them from deleting
 
 # PopUp
