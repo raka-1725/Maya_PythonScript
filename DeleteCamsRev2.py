@@ -4,7 +4,7 @@ class CameraCleanupUI:
     def __init__(self):
         self.window_id = "cameraCleanupWindow"
         self.title = "Camera Cleanup Tool"
-        self.size = (300, 150)
+        self.size = (300, 300)
         
         if cmds.window(self.window_id, exists=True):
             cmds.deleteUI(self.window_id)
@@ -20,8 +20,14 @@ class CameraCleanupUI:
         cmds.text(label="Delete all unnecessary cameras in this scene", align="center")
         cmds.separator(height=5)
         
+        # Text fields
+        cmds.text(label="Keywords for cameras to be protected(use , for multple words)",align = "left")
+        self.protected_field = cmds.textField(
+            text= "render, rendering, shot, cam",
+            annotation = "Cameras with names containing the characters entered here will not be deleted."
+        )
         # CheckBox
-        self.skip_render_cams = cmds.checkBox(label=" Protect cameras with specific words", annotation = "Exclude cameras has : render, rendering, shot, cam, from deleting", value=True)
+        self.skip_protected_cams = cmds.checkBox(label=" Enable protect cameras with specific words", value=True)
         
         cmds.separator(height=5)
         
@@ -35,10 +41,14 @@ class CameraCleanupUI:
 
     def execute_cleanup(self, *args):
         # Get checkbox flag
-        protect_render = cmds.checkBox(self.skip_render_cams, query=True, value=True)
+        protect_camera = cmds.checkBox(self.skip_protected_cams, query=True, value=True)
         
+        #Generating list from input
+        input_text = cmds.textField(self.protected_field, query=True, text=True)
+        protect_keywords = [word.strip().lower() for word in input_text.split(',') if word.strip()]
+
+
         default_cameras = ['persp', 'top', 'front', 'side', 'back', 'bottom', 'left', 'right']
-        render_keywords = ['render', 'rendering', 'shot', 'cam']
         
         # Undo Chunk
         cmds.undoInfo(openChunk=True)
@@ -73,9 +83,9 @@ class CameraCleanupUI:
 
 
                 # Rendering cam protection
-                is_render_cam = any(key.lower() in short_name.lower() for key in render_keywords)
-                if protect_render and is_render_cam:
-                    print(f"Protected render camera: {short_name}")
+                is_protected_cam = any(key.lower() in short_name.lower() for key in protect_keywords)
+                if protect_camera and is_protected_cam:
+                    print(f"Protected camera: {short_name}")
                     continue
 
                 # Execute delete
