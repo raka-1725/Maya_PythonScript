@@ -1,48 +1,97 @@
 import maya.cmds as cmds
 
-# Default cameras(4 cams)
-default_cameras = ['persp', 'top', 'front', 'side' , 'back' , 'bottom' , 'left' , 'right' ]
-# Add camera name to protect them from deleting
+def cleanup_cameras_pro():
+    
+    #merging this into one undo command
+    cmds.undoInfo(openChunk = True)
 
-# PopUp
-def show_popup(camera_name):
-    result = cmds.confirmDialog(
-        title= 'Delete Camera?',
-        message=f"Are you sure you want to delete '{camera_name}'?",
-        button=['Yes', 'No'],
-        defaultButton= 'No',
-        cancelButton= 'No',
-        dismissString= 'No'
-    )
-    return result == 'Yes'
-
-
-# Get all cams
-all_cameras = cmds.ls(type= 'camera')
-
-#deleteting extra cams
-for cam_shape in all_cameras:
-    cam_transform = cmds.listRelatives(cam_shape, parent=True, fullPath=False)[0]
-
-    if cam_transform in default_cameras:
-        continue
-
-    has_number = any(char.isdigit() for char in cam_transform)
-
-    if not has_number and not any(cam_transform.startswith(name) for name in default_cameras):
-        if not show_popup(cam_transform):
-            continue
     try:
-        if cmds.lockNode(cam_transform, query=True, lock=True)[0]:
-            cmds.lockNode(cam_transform, lock=False)
+
+
+        default_cameras = ['persp', 'top', 'front', 'side', 'back', 'bottom', 'left', 'right']
+        #render_cams = ['render', 'rendering', 'shot', 'cam']
         
-        if cmds.lockNode(cam_shape, query=True, lock=True)[0]:
-            cmds.lockNode(cam_shape, lock=False)
+        
+        deleteAll = False
 
-        #Executing Delete
-        cmds.delete(cam_transform)
-        print(f"Deleted camera: {cam_transform}")
 
-    except Exception as e:
-        print(f"Could not delete {cam_transform}: {e}")
+        all_camera_shapes = cmds.ls(type='camera')
+        
+        #Lists to avoid overlap
+        cameras_to_check = []
+        for shape in all_camera_shapes:
+            parent = cmds.listRelatives(shape, parent=True, fullPath=True)[0]
+            if parent not in cameras_to_check:
+                cameras_to_check.append(parent)
 
+        for cam_transform in cameras_to_check:
+            short_name = cam_transform.split('|')[-1]
+            
+            # skip maya default cameras
+            if cmds.camera(cam_transform, query=True, startupCamera=True):
+                continue
+
+            # skip default cameras above
+            if short_name.lower() in [n.lower() for n in default_cameras]:
+                continue
+                
+            # skip referenced cameras
+            if cmds.referenceQuery(cam_transform, isNodeReferenced=True):
+                print(f"Skipping referenced camera: {short_name}")
+                continue
+
+            # Detecting render camera
+            #is_render_cam = any(key.lower() in short_name.lower() for key in render_cams)
+            
+            
+            if not deleteAll:
+                msg = f"Delete Camera '{short_name}' ?"
+                buttons = ['Yes', 'Yes to All', 'No', 'Cancel']
+                
+                #if is_render_cam:
+                #    msg = f"WARNING: Potential render camera detected: '{short_name}' ,  Delete Camera '{short_name}' ?"
+                
+
+                result = cmds.confirmDialog(
+                    title='Delete Camera?',
+                    message=msg,
+                    button=buttons,
+                    defaultButton='No',
+                    cancelButton='Cancel',
+                    dismissString='Cancel'
+                )
+
+                if result == 'Yes to All':
+                    deleteAll = True
+                elif result == 'No':
+                    continue
+                elif result == 'Cancel':
+                    print("Operation cancelled by user.")
+                    break
+            
+            #Execute
+            
+            try:
+                # check lock
+                if cmds.lockNode(cam_transform, query=True, lock=True)[0]:
+                    cmds.lockNode(cam_transform, lock=False)
+                
+                # unlock shape node
+                shapes = cmds.listRelatives(cam_transform, shapes=True, fullPath=True) or []
+                for s in shapes:
+                    if cmds.lockNode(s, query=True, lock=True)[0]:
+                        cmds.lockNode(s, lock=False)
+
+                # deleting
+                cmds.delete(cam_transform)
+                print(f"Deleted: {short_name}")
+
+            except Exception as e:
+                print(f"Failed to delete {short_name}: {e}")
+
+
+    #closing undo block
+    finally:
+        cmds.undoInfo(closeChunk=True)
+
+cleanup_cameras_pro()
