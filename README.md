@@ -29,7 +29,7 @@ How to save Script in Maya Shelf:
 - Deletes All unnessary cameras
 - Simple GUI
 - Modified for creating shortcut
-- Detection for cameras with "rendering keywords"
+- Detection for cameras with specific keywords
 
 ---
 
