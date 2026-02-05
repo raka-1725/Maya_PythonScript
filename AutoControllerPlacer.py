@@ -6,3 +6,4 @@ for item in selection:
     OffsetGrp = mc.group(NewController, n = NewGrp.replace("grp", "grp_offset"))
     mc.matchTransform(NewGrp, item)
     mc.matchTransform(OffsetGrp, item)
+    mc.orientConstraint(NewController, item)
